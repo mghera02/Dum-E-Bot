@@ -1,0 +1,20 @@
+import time
+import wiringpi
+
+wiringpi.wiringPiSetupGpio()
+
+wiringpi.pinMode(11, wiringpi.GPIO.PWM_OUTPUT)
+
+wiringpi.pwmSetMode(wiringpi.GPIO.PWM_MODE_MS)
+
+wiring.pwmSetClock(192)
+wiring.pwmSetRange(2000)
+
+day_period=.01
+while True:
+    for pulse in range(50,250,1):
+        wiringpi.pwmWrite(11,pulse)
+        time.sleep(delay_period)
+    for pulse in range(250,50,-1):
+        wiringpi.pwmWrite(11,pulse)
+        time.sleep(delay_period)
