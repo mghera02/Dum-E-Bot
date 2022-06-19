@@ -12,11 +12,12 @@ with open("labels.pickle", 'rb') as f:
     og_labels = pickle.load(f)
     labels = {v:k for k,v in og_labels.items()}
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
+    frame = cv2.flip(frame, 0)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor = 1.1, minNeighbors = 5)
     for (x, y, w, h) in faces:

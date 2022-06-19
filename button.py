@@ -1,12 +1,16 @@
 import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BOARD)
+import time
+GPIO.setmode(GPIO.BCM)
 
-buttonPin = 16
+buttonPin = 18
+GPIO.setwarnings(False)
 GPIO.setup(buttonPin, GPIO.IN,pull_up_down=GPIO.PUD_UP)
+#GPIO.setup(buttonPin, GPIO.OUT)
 while True:
     buttonState = GPIO.input(buttonPin)
     print(buttonState)
-    '''if buttonState == False:
-        print("n")
-    else:
-        print("y")'''
+    '''GPIO.output(buttonPin,1)
+    time.sleep(1)
+    GPIO.output(buttonPin,0)
+    time.sleep(1)'''
+
