@@ -1,4 +1,10 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath("~/Desktop/DumE"))
 import speechToText as STT
+import lcdText as lcd
+import playMusic as music
 
 import RPi.GPIO as GPIO
 import numpy
@@ -14,7 +20,7 @@ GPIO.setup(ledPin, GPIO.OUT)
 
 import motorControlFuncs as motor
 
-face_cascade = cv2.CascadeClassifier('cascades/data/haarcascade_frontalface_alt.xml')
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt.xml')
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_BUFFERSIZE,1)
 
@@ -23,11 +29,12 @@ print("Welcome to the Dum-E Program")
 currTime = time.time()
 buttonPress = 1
 
-motor.moveToDefaultLoc()
 currTopPos = 50
-currMidPos = 80
+currMidPos = 65
+currBotPos = 90
 timeSinceCall = time.time()
 currMode = 'Camera Mode'
+light = "on"
 
 while True:
     currButton = GPIO.input(GPIOPin)
@@ -40,7 +47,7 @@ while True:
             currMode = 'Camera Mode'
         print(currMode)
 
-    if buttonPress % 2:
+    if buttonPress % 2 == 0:
         faceCenter = [-1,-1]
 	# Capture frame-by-frame
         coords = (0,0,0,0)
@@ -69,29 +76,26 @@ while True:
         cv2.imshow('frame', frame)
         print(faceCenter)
         if faceCenter != [-1,-1]:
-            if (faceCenter[1] < 100):
+            if (faceCenter[1] < 120):
                 currTopPos, currMidPos = motor.moveUp(currTopPos, currMidPos)
                 print('move up', currTopPos)
-            elif (faceCenter[1] > 160):
+            elif (faceCenter[1] > 140):
                 currTopPos, currMidPos = motor.moveDown(currTopPos, currMidPos)
                 print('move down', currTopPos)
             else:
                 print('dont move')
 
-            if (faceCenter[0] > 255):
+            if (faceCenter[0] > 220):
                 print('move left')
-                timeSinceCall = motor.moveHorizontal('left', timeSinceCall)
-            elif (faceCenter[0] < 140):
-                timeSinceCall = motor.moveHorizontal('right', timeSinceCall) 
-            else: 
-                timeSinceCall = motor.moveHorizontal('stop', timeSinceCall)
+                currBotPos = motor.moveLeft(currBotPos)
+            elif (faceCenter[0] < 160):
+                currBotPos = motor.moveRight(currBotPos)
 
         else:
-            timeSinceCall = motor.moveHorizontal('stop', timeSinceCall)
             print('no face detected')
 
         avgAvgColor = avgColor.mean()
-        if avgAvgColor <= 70:
+        if avgAvgColor <= 70 and light == "on":
             GPIO.output(ledPin,1)
             print(avgAvgColor, 'on')
         else:
@@ -101,8 +105,41 @@ while True:
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
     else:
-        motor.moveHorizontal('stop', timeSinceCall)
-        while(1):
+        listening = True
+        while(listening):
             audio1 = STT.listen1() 
             text = STT.voice(audio1)
+            lcd.printToLCD('Heard:' + text)
             response, action = STT.respond(text)
+            time.sleep(1.5)
+
+            if 'switch modes' in action:
+                motor.sleep(currTopPos, currMidPos)
+                motor.wakeUp()
+                listening = False
+                buttonPress += 1
+            if 'turn light off' in action:
+                light = "off"
+                GPIO.output(ledPin,0)
+            if 'turn light on' in action:
+                light = "on"
+                GPIO.output(ledPin,1)
+            if 'wake up' in action:
+                motor.wakeUp()
+            if 'sleep' in action:
+                motor.sleep(currTopPos, currMidPos)
+            if 'play music' in action:
+                if("wake up" in action):
+                    music.playMusic(True)
+                else:
+                    music.playMusic(False)
+            if 'stop music' in action:
+                music.stopMusic()
+            if 'move down' in action:
+                currTopPos, currMidPos = motor.moveDown(currTopPos, currMidPos, True)
+            if 'move up' in action:
+                currTopPos, currMidPos = motor.moveUp(currTopPos, currMidPos, True)
+            if 'turn left' in action:
+                currBotPos = motor.moveLeft(currBotPos, True)
+            if 'turn right' in action:
+                currBotPos = motor.moveRight(currBotPos, True)
